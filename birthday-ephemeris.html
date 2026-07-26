@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ephemeris — твій особистий календар</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e161c;
+    --bg-deep:#0a1117;
+    --surface:#141f27;
+    --surface-2:#1a2831;
+    --line:#26363f;
+    --gold:#c9a24b;
+    --gold-dim:#8a7442;
+    --teal:#5b9c92;
+    --text:#e8e2d4;
+    --text-dim:#8fa0a8;
+    --text-faint:#5a6b73;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:radial-gradient(ellipse at top, #101c24 0%, var(--bg-deep) 65%);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+    padding:0 0 80px;
+    min-height:100vh;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px;}
+  header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:28px 0 20px;
+    max-width:760px;margin:0 auto;padding-left:24px;padding-right:24px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;letter-spacing:0.25em;text-transform:uppercase;
+    color:var(--gold);
+  }
+  .brand span{color:var(--text-faint);}
+  nav{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);letter-spacing:0.05em;}
+
+  .hero{padding:64px 0 40px;text-align:center;}
+  .hero .eyebrow{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;
+    text-transform:uppercase;color:var(--text-faint);margin-bottom:18px;
+  }
+  .hero h1{
+    font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,5vw,42px);
+    line-height:1.15;margin-bottom:36px;color:var(--text);
+  }
+  .hero h1 em{font-style:italic;color:var(--gold);}
+
+  .dial-wrap{display:flex;justify-content:center;margin-bottom:36px;}
+
+  .controls{
+    display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;
+  }
+  input[type=date]{
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;
+    padding:12px 16px;color-scheme:dark;
+  }
+  .sleep-row{
+    display:flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
+  }
+  select{
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+    padding:10px 12px;
+  }
+  button.primary{
+    background:var(--gold);color:#1a1206;border:none;border-radius:8px;
+    padding:13px 26px;font-family:'Inter',sans-serif;font-weight:600;font-size:14px;
+    cursor:pointer;transition:transform .15s ease, background .15s ease;
+  }
+  button.primary:hover{background:#dcb35f;transform:translateY(-1px);}
+  button.primary:active{transform:scale(0.98);}
+
+  .results{display:none;margin-top:56px;}
+  .results.show{display:block;}
+
+  section.block{
+    margin-bottom:20px;opacity:0;transform:translateY(14px);
+    animation:rise .6s ease forwards;
+  }
+  section.block:nth-of-type(1){animation-delay:.05s;}
+  section.block:nth-of-type(2){animation-delay:.15s;}
+  section.block:nth-of-type(3){animation-delay:.25s;}
+  @keyframes rise{to{opacity:1;transform:translateY(0);}}
+
+  .block-title{
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.2em;
+    text-transform:uppercase;color:var(--gold-dim);margin-bottom:14px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .block-title::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:24px 26px;margin-bottom:14px;
+  }
+  .card h3{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13px;
+    color:var(--text-dim);margin-bottom:14px;text-transform:none;
+  }
+  .big-counter{
+    display:grid;grid-template-columns:repeat(6,1fr);gap:8px;text-align:center;
+  }
+  .big-counter .unit{
+    background:var(--surface-2);border-radius:10px;padding:14px 4px;
+  }
+  .big-counter .num{
+    font-family:'Fraunces',serif;font-weight:500;font-size:clamp(18px,3.4vw,28px);
+    color:var(--gold);font-variant-numeric:tabular-nums;
+  }
+  .big-counter .lbl{
+    font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;
+  }
+  @media(max-width:600px){.big-counter{grid-template-columns:repeat(3,1fr);}}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .stat{background:var(--surface-2);border-radius:10px;padding:16px;}
+  .stat .val{font-family:'Fraunces',serif;font-size:22px;color:var(--text);font-weight:500;}
+  .stat .cap{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:0.06em;margin-top:4px;}
+  @media(max-width:600px){.stat-grid{grid-template-columns:repeat(2,1fr);}}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-faint);
+    text-transform:uppercase;letter-spacing:0.05em;font-weight:400;}
+  td{color:var(--text-dim);}
+  td.hl{color:var(--gold);font-weight:500;}
+  tr.weekend td{color:var(--teal);}
+
+  .note{
+    font-size:12.5px;color:var(--text-faint);line-height:1.6;
+    border-left:2px solid var(--gold-dim);padding-left:12px;margin-top:14px;
+  }
+
+  .pill-row{display:flex;flex-wrap:wrap;gap:10px;}
+  .pill{
+    background:var(--surface-2);border-radius:20px;padding:8px 16px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
+    display:flex;align-items:center;gap:8px;
+  }
+  .pill b{color:var(--gold);font-weight:500;}
+
+  .milestone-list{display:flex;flex-direction:column;gap:10px;}
+  .milestone{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--surface-2);border-radius:10px;padding:14px 18px;
+  }
+  .milestone .m-name{font-size:13px;color:var(--text-dim);}
+  .milestone .m-date{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);}
+
+  .footnote{
+    text-align:center;margin-top:40px;font-size:12px;color:var(--text-faint);
+    font-family:'JetBrains Mono',monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">ephemeris<span> / особистий календар</span></div>
+  <nav>UA — прототип, без бекенду</nav>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">введи дату народження</div>
+    <h1>Скільки часу ти вже <em>прожив</em> — і що каже про це календар</h1>
+
+    <div class="dial-wrap"><svg id="dial" width="180" height="180" viewBox="0 0 180 180"></svg></div>
+
+    <div class="controls">
+      <input type="date" id="dob" value="1994-07-12">
+      <div class="sleep-row">
+        сон/добу
+        <select id="sleepHours">
+          <option>4</option><option>5</option><option>6</option><option>7</option>
+          <option selected>8</option><option>9</option><option>10</option>
+        </select>
+        год
+      </div>
+      <button class="primary" onclick="calculate()">розрахувати →</button>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+
+    <section class="block">
+      <div class="block-title">01 — час</div>
+      <div class="card">
+        <h3>прожито (оновлюється щосекунди)</h3>
+        <div class="big-counter">
+          <div class="unit"><div class="num" id="cY">0</div><div class="lbl">років</div></div>
+          <div class="unit"><div class="num" id="cM">0</div><div class="lbl">місяців</div></div>
+          <div class="unit"><div class="num" id="cD">0</div><div class="lbl">днів</div></div>
+          <div class="unit"><div class="num" id="cH">0</div><div class="lbl">годин</div></div>
+          <div class="unit"><div class="num" id="cMi">0</div><div class="lbl">хвилин</div></div>
+          <div class="unit"><div class="num" id="cS">0</div><div class="lbl">секунд</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>у цифрах</h3>
+        <div class="stat-grid">
+          <div class="stat"><div class="val" id="fullWeeks">—</div><div class="cap">повних тижнів</div></div>
+          <div class="stat"><div class="val" id="fullMonths">—</div><div class="cap">повних місяців</div></div>
+          <div class="stat"><div class="val" id="fullDays">—</div><div class="cap">повних днів</div></div>
+          <div class="stat"><div class="val" id="sleepTotal">—</div><div class="cap">годин проспано</div></div>
+          <div class="stat"><div class="val" id="sleepPerYear">—</div><div class="cap">год сну/рік</div></div>
+          <div class="stat"><div class="val" id="totalSeconds">—</div><div class="cap">секунд всього</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-title">02 — календар</div>
+      <div class="card">
+        <h3>день народження</h3>
+        <div class="pill-row">
+          <div class="pill">народився у <b id="birthWeekday">—</b></div>
+          <div class="pill"><b id="dayOfYear">—</b>-й день року</div>
+          <div class="pill">юліанська дата: <b id="julianDate">—</b></div>
+          <div class="pill">фаза місяця при народженні: <b id="birthMoon">—</b></div>
+        </div>
+        <div class="note">Юліанська дата (JDN) — це суцільний рахунок днів від умовної точки відліку (4713 р. до н.е.), без місяців і років. Астрономи й хронологи використовують її, щоб рахувати інтервал між будь-якими двома датами простим відніманням чисел, не морочачись із різною довжиною місяців і високосними роками.</div>
+      </div>
+
+      <div class="card">
+        <h3>скільки кожного дня тижня прожито</h3>
+        <table>
+          <thead><tr><th>день тижня</th><th>зараз</th><th>на 25</th><th>на 50</th><th>на 75</th></tr></thead>
+          <tbody id="weekdayTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>на який день тижня випаде день народження</h3>
+        <table>
+          <thead><tr><th>рік</th><th>вік</th><th>день тижня</th></tr></thead>
+          <tbody id="futureTable"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>фаза місяця по роках</h3>
+        <table>
+          <thead><tr><th>рік</th><th>фаза місяця в день народження</th></tr></thead>
+          <tbody id="moonTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-title">03 — ідентичність</div>
+      <div class="card">
+        <div class="pill-row">
+          <div class="pill">покоління: <b id="generation">—</b></div>
+          <div class="pill">знак зодіаку: <b id="zodiacWest">—</b></div>
+          <div class="pill">східний календар: <b id="zodiacEast">—</b></div>
+          <div class="pill">дата римськими цифрами: <b id="roman">—</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>найближчі мілстоуни</h3>
+        <div class="milestone-list" id="milestones"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="footnote">блок «світ» (вікі-події, населення, погода, курси) підключимо окремим кроком через API</div>
+</div>
+
+<script>
+const WD = ['неділя','понеділок','вівторок','середа','четвер',"п'ятниця",'субота'];
+const WD_SHORT = ['нд','пн','вт','ср','чт','пт','сб'];
+
+function pad(n){return n<10?'0'+n:''+n;}
+
+function toRoman(num){
+  const vals=[1000,900,500,400,100,90,50,40,10,9,5,4,1];
+  const syms=['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+  let res='';
+  for(let i=0;i<vals.length;i++){ while(num>=vals[i]){res+=syms[i]; num-=vals[i];} }
+  return res;
+}
+
+function toJDN(y,m,d){
+  const a = Math.floor((14-m)/12);
+  const y2 = y + 4800 - a;
+  const m2 = m + 12*a - 3;
+  return d + Math.floor((153*m2+2)/5) + 365*y2 + Math.floor(y2/4) - Math.floor(y2/100) + Math.floor(y2/400) - 32045;
+}
+
+function moonPhase(date){
+  const synodic = 29.53058867;
+  const knownNewMoon = Date.UTC(2000,0,6,18,14,0);
+  const diffDays = (date.getTime() - knownNewMoon) / 86400000;
+  let phase = (diffDays % synodic) / synodic;
+  if(phase < 0) phase += 1;
+  return phase;
+}
+const MOON_NAMES = ['новий місяць','молодий місяць','перша чверть','місяць росте','повний місяць','місяць спадає','остання чверть','старий місяць'];
+function moonPhaseName(phase){
+  const idx = Math.round(phase*8) % 8;
+  return MOON_NAMES[idx];
+}
+
+function ageBreakdown(birth, now){
+  let y = now.getFullYear()-birth.getFullYear();
+  let m = now.getMonth()-birth.getMonth();
+  let d = now.getDate()-birth.getDate();
+  let h = now.getHours()-birth.getHours();
+  let mi = now.getMinutes()-birth.getMinutes();
+  let s = now.getSeconds()-birth.getSeconds();
+  if(s<0){s+=60;mi--;}
+  if(mi<0){mi+=60;h--;}
+  if(h<0){h+=24;d--;}
+  if(d<0){ const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate(); d+=prevMonth; m--; }
+  if(m<0){m+=12;y--;}
+  return {y,m,d,h,mi,s};
+}
+
+function countWeekdays(start,end){
+  const totalDays = Math.floor((end - start)/86400000) + 1;
+  if(totalDays <= 0) return [0,0,0,0,0,0,0];
+  const counts = new Array(7).fill(Math.floor(totalDays/7));
+  const startDow = start.getDay();
+  const remainder = totalDays % 7;
+  for(let i=0;i<remainder;i++){ counts[(startDow+i)%7]++; }
+  return counts;
+}
+
+function westernZodiac(m,d){
+  const table = [
+    [1,19,'Козеріг'],[2,18,'Водолій'],[3,20,'Риби'],[4,19,'Овен'],[5,20,'Телець'],
+    [6,20,'Близнюки'],[7,22,'Рак'],[8,22,'Лев'],[9,22,'Діва'],[10,22,'Терези'],
+    [11,21,'Скорпіон'],[12,21,'Стрілець'],[12,31,'Козеріг']
+  ];
+  for(const [mm,dd,name] of table){ if(m<mm || (m===mm && d<=dd)) return name; }
+  return 'Козеріг';
+}
+
+function easternZodiac(y){
+  const animals = ['Щур','Бик','Тигр','Кролик','Дракон','Змія','Кінь','Коза','Мавпа','Півень','Собака','Свиня'];
+  const elements = ['Метал','Метал','Вода','Вода','Дерево','Дерево','Вогонь','Вогонь','Земля','Земля'];
+  const a = animals[((y - 4) % 12 + 12) % 12];
+  const e = elements[((y % 10) + 10) % 10];
+  return `${e} ${a}`;
+}
+
+function generation(y){
+  if(y>=2013) return 'Покоління Alpha';
+  if(y>=1997) return 'Покоління Z';
+  if(y>=1981) return 'Міленіали (Y)';
+  if(y>=1965) return 'Покоління X';
+  if(y>=1946) return 'Бумери';
+  return 'Мовчазне покоління';
+}
+
+let BIRTH = null, SLEEP = 8, tickHandle = null;
+
+function drawDial(highlightDow){
+  const svg = document.getElementById('dial');
+  const cx=90, cy=90, r=68;
+  let html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#26363f" stroke-width="1"/>`;
+  for(let i=0;i<7;i++){
+    const ang = (i/7)*2*Math.PI - Math.PI/2;
+    const x1 = cx + Math.cos(ang)*(r-8), y1 = cy + Math.sin(ang)*(r-8);
+    const x2 = cx + Math.cos(ang)*r, y2 = cy + Math.sin(ang)*r;
+    const active = i===highlightDow;
+    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${active?'#c9a24b':'#3a4a53'}" stroke-width="${active?2.5:1}"/>`;
+    const lx = cx + Math.cos(ang)*(r+16), ly = cy + Math.sin(ang)*(r+16);
+    html += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace" font-size="9" fill="${active?'#c9a24b':'#5a6b73'}">${WD_SHORT[i]}</text>`;
+  }
+  html += `<circle cx="${cx}" cy="${cy}" r="3" fill="#c9a24b"/>`;
+  svg.innerHTML = html;
+}
+drawDial(-1);
+
+function calculate(){
+  const dobVal = document.getElementById('dob').value;
+  if(!dobVal) return;
+  const [Y,M,D] = dobVal.split('-').map(Number);
+  BIRTH = new Date(Y, M-1, D, 0, 0, 0);
+  SLEEP = Number(document.getElementById('sleepHours').value);
+
+  document.getElementById('results').classList.add('show');
+  drawDial(BIRTH.getDay());
+
+  const now = new Date();
+
+  // Calendar block
+  document.getElementById('birthWeekday').textContent = WD[BIRTH.getDay()];
+  const start = new Date(Y,0,1);
+  const dayOfYear = Math.floor((BIRTH - start)/86400000) + 1;
+  document.getElementById('dayOfYear').textContent = dayOfYear;
+  document.getElementById('julianDate').textContent = toJDN(Y,M,D).toLocaleString('uk-UA');
+  document.getElementById('birthMoon').textContent = moonPhaseName(moonPhase(BIRTH));
+
+  // Weekday counts: now, 25, 50, 75
+  const ages = [null,25,50,75];
+  const countsByAge = ages.map(age=>{
+    const end = age===null ? now : new Date(Y+age, M-1, D);
+    return countWeekdays(BIRTH, end);
+  });
+  let rows = '';
+  for(let d=0; d<7; d++){
+    rows += `<tr><td>${WD[d]}</td><td class="hl">${countsByAge[0][d]}</td><td>${countsByAge[1][d]}</td><td>${countsByAge[2][d]}</td><td>${countsByAge[3][d]}</td></tr>`;
+  }
+  document.getElementById('weekdayTable').innerHTML = rows;
+
+  // Future birthdays table
+  const curYear = now.getFullYear();
+  let futRows = '';
+  for(let i=0;i<15;i++){
+    const yr = curYear + i;
+    const dt = new Date(yr, M-1, D);
+    const dow = dt.getDay();
+    const isWeekend = dow===0 || dow===6;
+    futRows += `<tr class="${isWeekend?'weekend':''}"><td>${yr}</td><td>${yr-Y}</td><td>${WD[dow]}</td></tr>`;
+  }
+  document.getElementById('futureTable').innerHTML = futRows;
+
+  // Moon phases by year
+  let moonRows = '';
+  for(let i=0;i<10;i++){
+    const yr = curYear + i;
+    const dt = new Date(yr, M-1, D);
+    moonRows += `<tr><td>${yr}</td><td>${moonPhaseName(moonPhase(dt))}</td></tr>`;
+  }
+  document.getElementById('moonTable').innerHTML = moonRows;
+
+  // Identity block
+  document.getElementById('generation').textContent = generation(Y);
+  document.getElementById('zodiacWest').textContent = westernZodiac(M,D);
+  document.getElementById('zodiacEast').textContent = easternZodiac(Y);
+  document.getElementById('roman').textContent = `${toRoman(D)}.${toRoman(M)}.${toRoman(Y)}`;
+
+  // Milestones
+  const totalDaysNow = Math.floor((now-BIRTH)/86400000);
+  const totalSecNow = Math.floor((now-BIRTH)/1000);
+  const milestones = [];
+
+  const day10k = new Date(BIRTH); day10k.setDate(day10k.getDate()+10000);
+  milestones.push({name:'10 000 днів життя', date:day10k, passed: totalDaysNow>=10000});
+
+  const bilSec = new Date(BIRTH.getTime() + 1e9*1000);
+  milestones.push({name:'1 000 000 000 секунд', date:bilSec, passed: totalSecNow>=1e9});
+
+  const sleepDays = Math.ceil(25000 / SLEEP);
+  const sleep25k = new Date(BIRTH); sleep25k.setDate(sleep25k.getDate()+sleepDays);
+  milestones.push({name:`25 000 годин сну (за ${SLEEP} год/добу)`, date: sleep25k, passed: totalDaysNow>=sleepDays});
+
+  document.getElementById('milestones').innerHTML = milestones.map(m=>`
+    <div class="milestone">
+      <div class="m-name">${m.name} ${m.passed?'— вже позаду':'— попереду'}</div>
+      <div class="m-date">${m.date.toLocaleDateString('uk-UA')}</div>
+    </div>`).join('');
+
+  // Stats
+  const fullWeeks = Math.floor(totalDaysNow/7);
+  let fullMonths = (now.getFullYear()-Y)*12 + (now.getMonth()-(M-1));
+  if(now.getDate() < D) fullMonths--;
+  document.getElementById('fullWeeks').textContent = fullWeeks.toLocaleString('uk-UA');
+  document.getElementById('fullMonths').textContent = fullMonths.toLocaleString('uk-UA');
+  document.getElementById('fullDays').textContent = totalDaysNow.toLocaleString('uk-UA');
+  document.getElementById('sleepTotal').textContent = Math.round(totalDaysNow*SLEEP).toLocaleString('uk-UA');
+  document.getElementById('sleepPerYear').textContent = Math.round(SLEEP*365.25).toLocaleString('uk-UA');
+  document.getElementById('totalSeconds').textContent = totalSecNow.toLocaleString('uk-UA');
+
+  if(tickHandle) clearInterval(tickHandle);
+  tick();
+  tickHandle = setInterval(tick, 1000);
+
+  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function tick(){
+  if(!BIRTH) return;
+  const now = new Date();
+  const a = ageBreakdown(BIRTH, now);
+  document.getElementById('cY').textContent = a.y;
+  document.getElementById('cM').textContent = a.m;
+  document.getElementById('cD').textContent = a.d;
+  document.getElementById('cH').textContent = pad(a.h);
+  document.getElementById('cMi').textContent = pad(a.mi);
+  document.getElementById('cS').textContent = pad(a.s);
+}
+</script>
+</body>
+</html>
