@@ -152,7 +152,7 @@
   td{color:var(--text-dim);}
   td.hl{color:var(--gold);font-weight:500;}
   tr.weekend td{color:var(--teal);}
-  .col-narrow{width:52px;}
+  .col-narrow{width:104px;}
   .col-sign{color:var(--teal);}
 
   .note{
@@ -353,11 +353,12 @@ function moonPhaseName(phase){
 }
 
 const ZODIAC_SIGNS = ['Овен','Телець','Близнюки','Рак','Лев','Діва','Терези','Скорпіон','Стрілець','Козеріг','Водолій','Риби'];
+const ZODIAC_RULERS = ['Марс','Венера','Меркурій','Місяць','Сонце','Меркурій','Венера','Плутон','Юпітер','Сатурн','Уран','Нептун'];
 function moonZodiacSign(date){
   const d = (date.getTime()/86400000) - 10957.5;
   const L = (218.316 + 13.176396 * d) % 360;
   const sign = Math.floor(((L % 360) + 360) % 360 / 30);
-  return ZODIAC_SIGNS[sign];
+  return `${ZODIAC_SIGNS[sign]} (${ZODIAC_RULERS[sign]})`;
 }
 
 function ageBreakdown(birth, now){
@@ -462,7 +463,7 @@ function renderMoon(){
     const yr = moonStart + i;
     if(yr > maxYear) break;
     const dt = new Date(yr, M, D);
-    rows += `<tr><td>${yr}</td><td>${yr-Y}</td><td>${moonPhaseName(moonPhase(dt))}</td></tr>`;
+    rows += `<tr><td>${yr}</td><td>${yr-Y}</td><td>${moonPhaseName(moonPhase(dt))}</td><td class="col-sign">${moonZodiacSign(dt)}</td></tr>`;
   }
   document.getElementById('moonTable').innerHTML = rows;
   document.getElementById('moonPrev').disabled = moonStart <= minYear;
