@@ -152,6 +152,8 @@
   td{color:var(--text-dim);}
   td.hl{color:var(--gold);font-weight:500;}
   tr.weekend td{color:var(--teal);}
+  .col-narrow{width:52px;}
+  .col-sign{color:var(--teal);}
 
   .note{
     font-size:12.5px;color:var(--text-faint);line-height:1.6;
@@ -174,6 +176,20 @@
   .milestone .m-name{font-size:13px;color:var(--text-dim);}
   .milestone .m-date{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);}
 
+  .table-nav{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:12px;padding-top:10px;border-top:1px solid var(--line);
+  }
+  .nav-btn{
+    background:var(--surface-2);border:1px solid var(--line);border-radius:8px;
+    color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:11px;
+    padding:8px 14px;cursor:pointer;transition:background .15s ease, color .15s ease;
+  }
+  .nav-btn:hover:not(:disabled){background:var(--line);color:var(--text);}
+  .nav-btn:disabled{opacity:0.3;cursor:default;}
+  .nav-range{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-faint);
+  }
   .footnote{
     text-align:center;margin-top:40px;font-size:12px;color:var(--text-faint);
     font-family:'JetBrains Mono',monospace;
@@ -239,10 +255,6 @@
           <div class="stat"><div class="val" id="totalSeconds">—</div><div class="cap">секунд всього</div></div>
         </div>
       </div>
-    </section>
-
-    <section class="block">
-      <div class="block-title">02 — календар</div>
       <div class="card">
         <h3>день народження</h3>
         <div class="pill-row">
@@ -253,34 +265,10 @@
         </div>
         <div class="note">Юліанська дата (JDN) — це суцільний рахунок днів від умовної точки відліку (4713 р. до н.е.), без місяців і років. Астрономи й хронологи використовують її, щоб рахувати інтервал між будь-якими двома датами простим відніманням чисел, не морочачись із різною довжиною місяців і високосними роками.</div>
       </div>
-
-      <div class="card">
-        <h3>скільки кожного дня тижня прожито</h3>
-        <table>
-          <thead><tr><th>день тижня</th><th>зараз</th><th>на 25</th><th>на 50</th><th>на 75</th></tr></thead>
-          <tbody id="weekdayTable"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>на який день тижня випаде день народження</h3>
-        <table>
-          <thead><tr><th>рік</th><th>вік</th><th>день тижня</th></tr></thead>
-          <tbody id="futureTable"></tbody>
-        </table>
-      </div>
-
-      <div class="card">
-        <h3>фаза місяця по роках</h3>
-        <table>
-          <thead><tr><th>рік</th><th>фаза місяця в день народження</th></tr></thead>
-          <tbody id="moonTable"></tbody>
-        </table>
-      </div>
     </section>
 
     <section class="block">
-      <div class="block-title">03 — ідентичність</div>
+      <div class="block-title">02 — ідентичність</div>
       <div class="card">
         <div class="pill-row">
           <div class="pill">покоління: <b id="generation">—</b></div>
@@ -290,8 +278,37 @@
         </div>
       </div>
       <div class="card">
-        <h3>найближчі мілстоуни</h3>
+        <h3>найближчі визначні позначки</h3>
         <div class="milestone-list" id="milestones"></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-title">03 — календар</div>
+      <div class="card">
+        <h3>на який день тижня випаде день народження</h3>
+        <table>
+          <thead><tr><th>рік</th><th>вік</th><th>день тижня</th></tr></thead>
+          <tbody id="futureTable"></tbody>
+        </table>
+        <div class="table-nav" id="futureNav">
+          <button class="nav-btn" onclick="shiftFuture(-10)" id="futurePrev" disabled>← раніше</button>
+          <span class="nav-range" id="futureRange"></span>
+          <button class="nav-btn" onclick="shiftFuture(10)" id="futureNext">пізніше →</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>фаза місяця по роках</h3>
+        <table>
+          <thead><tr><th>рік</th><th>вік</th><th>фаза місяця в день народження</th></tr></thead>
+          <tbody id="moonTable"></tbody>
+        </table>
+        <div class="table-nav" id="moonNav">
+          <button class="nav-btn" onclick="shiftMoon(-10)" id="moonPrev" disabled>← раніше</button>
+          <span class="nav-range" id="moonRange"></span>
+          <button class="nav-btn" onclick="shiftMoon(10)" id="moonNext">пізніше →</button>
+        </div>
       </div>
     </section>
 
@@ -350,15 +367,6 @@ function ageBreakdown(birth, now){
   return {y,m,d,h,mi,s};
 }
 
-function countWeekdays(start,end){
-  const totalDays = Math.floor((end - start)/86400000) + 1;
-  if(totalDays <= 0) return [0,0,0,0,0,0,0];
-  const counts = new Array(7).fill(Math.floor(totalDays/7));
-  const startDow = start.getDay();
-  const remainder = totalDays % 7;
-  for(let i=0;i<remainder;i++){ counts[(startDow+i)%7]++; }
-  return counts;
-}
 
 function westernZodiac(m,d){
   const table = [
@@ -407,6 +415,60 @@ function drawDial(highlightDow){
 }
 drawDial(-1);
 
+let futureStart = 0, moonStart = 0;
+
+function renderFuture(){
+  if(!BIRTH) return;
+  const Y = BIRTH.getFullYear(), M = BIRTH.getMonth();
+  const D = BIRTH.getDate();
+  const minYear = Y, maxYear = Y + 120;
+  let rows = '';
+  for(let i=0;i<10;i++){
+    const yr = futureStart + i;
+    if(yr > maxYear) break;
+    const dt = new Date(yr, M, D);
+    const dow = dt.getDay();
+    const isWeekend = dow===0 || dow===6;
+    rows += `<tr class="${isWeekend?'weekend':''}"><td>${yr}</td><td>${yr-Y}</td><td>${WD[dow]}</td></tr>`;
+  }
+  document.getElementById('futureTable').innerHTML = rows;
+  document.getElementById('futurePrev').disabled = futureStart <= minYear;
+  document.getElementById('futureNext').disabled = futureStart + 10 > maxYear;
+  document.getElementById('futureRange').textContent = `${futureStart}–${Math.min(futureStart+9, maxYear)}`;
+}
+
+function shiftFuture(delta){
+  if(!BIRTH) return;
+  const minYear = BIRTH.getFullYear(), maxYear = minYear + 120;
+  futureStart = Math.max(minYear, Math.min(futureStart + delta, maxYear - 9));
+  renderFuture();
+}
+
+function renderMoon(){
+  if(!BIRTH) return;
+  const Y = BIRTH.getFullYear(), M = BIRTH.getMonth();
+  const D = BIRTH.getDate();
+  const minYear = Y, maxYear = Y + 120;
+  let rows = '';
+  for(let i=0;i<10;i++){
+    const yr = moonStart + i;
+    if(yr > maxYear) break;
+    const dt = new Date(yr, M, D);
+    rows += `<tr><td>${yr}</td><td>${yr-Y}</td><td>${moonPhaseName(moonPhase(dt))}</td></tr>`;
+  }
+  document.getElementById('moonTable').innerHTML = rows;
+  document.getElementById('moonPrev').disabled = moonStart <= minYear;
+  document.getElementById('moonNext').disabled = moonStart + 10 > maxYear;
+  document.getElementById('moonRange').textContent = `${moonStart}–${Math.min(moonStart+9, maxYear)}`;
+}
+
+function shiftMoon(delta){
+  if(!BIRTH) return;
+  const minYear = BIRTH.getFullYear(), maxYear = minYear + 120;
+  moonStart = Math.max(minYear, Math.min(moonStart + delta, maxYear - 9));
+  renderMoon();
+}
+
 function calculate(){
   const dobVal = document.getElementById('dob').value;
   if(!dobVal) return;
@@ -427,38 +489,14 @@ function calculate(){
   document.getElementById('julianDate').textContent = toJDN(Y,M,D).toLocaleString('uk-UA');
   document.getElementById('birthMoon').textContent = moonPhaseName(moonPhase(BIRTH));
 
-  // Weekday counts: now, 25, 50, 75
-  const ages = [null,25,50,75];
-  const countsByAge = ages.map(age=>{
-    const end = age===null ? now : new Date(Y+age, M-1, D);
-    return countWeekdays(BIRTH, end);
-  });
-  let rows = '';
-  for(let d=0; d<7; d++){
-    rows += `<tr><td>${WD[d]}</td><td class="hl">${countsByAge[0][d]}</td><td>${countsByAge[1][d]}</td><td>${countsByAge[2][d]}</td><td>${countsByAge[3][d]}</td></tr>`;
-  }
-  document.getElementById('weekdayTable').innerHTML = rows;
-
-  // Future birthdays table
+  // Future birthdays table (paginated)
   const curYear = now.getFullYear();
-  let futRows = '';
-  for(let i=0;i<15;i++){
-    const yr = curYear + i;
-    const dt = new Date(yr, M-1, D);
-    const dow = dt.getDay();
-    const isWeekend = dow===0 || dow===6;
-    futRows += `<tr class="${isWeekend?'weekend':''}"><td>${yr}</td><td>${yr-Y}</td><td>${WD[dow]}</td></tr>`;
-  }
-  document.getElementById('futureTable').innerHTML = futRows;
+  futureStart = curYear;
+  renderFuture();
 
-  // Moon phases by year
-  let moonRows = '';
-  for(let i=0;i<10;i++){
-    const yr = curYear + i;
-    const dt = new Date(yr, M-1, D);
-    moonRows += `<tr><td>${yr}</td><td>${moonPhaseName(moonPhase(dt))}</td></tr>`;
-  }
-  document.getElementById('moonTable').innerHTML = moonRows;
+  // Moon phases by year (paginated)
+  moonStart = curYear;
+  renderMoon();
 
   // Identity block
   document.getElementById('generation').textContent = generation(Y);
