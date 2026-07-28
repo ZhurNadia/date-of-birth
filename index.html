@@ -62,6 +62,18 @@
     color:var(--text-faint);letter-spacing:0.03em;
   }
   .privacy-note svg{flex-shrink:0;}
+  .scroll-hint{
+    display:none;margin-top:28px;cursor:pointer;
+    color:var(--gold);opacity:0;
+  }
+  .scroll-hint.show{
+    display:flex;justify-content:center;
+    animation:hintPulse 2s ease-in-out infinite, fadeIn .6s .3s forwards;
+  }
+  @keyframes hintPulse{
+    0%,100%{transform:translateY(0);opacity:0.5;}
+    50%{transform:translateY(6px);opacity:1;}
+  }
   .hero h1{
     font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,5vw,42px);
     line-height:1.15;margin-bottom:36px;color:var(--text);
@@ -170,6 +182,7 @@
     display:flex;align-items:center;gap:8px;
   }
   .pill b{color:var(--gold);font-weight:500;}
+  .color-dot{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle;border:1px solid rgba(255,255,255,0.15);}
 
   .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   @media(max-width:600px){.mc-grid{grid-template-columns:1fr;}}
@@ -240,6 +253,12 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
       усі дані залишаються локально на вашому пристрої — нічого не передається і не збирається
     </div>
+    <div class="scroll-hint" id="scrollHint" onclick="document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'})">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="7 8 12 13 17 8"/>
+        <polyline points="7 13 12 18 17 13"/>
+      </svg>
+    </div>
   </div>
 
   <div class="results" id="results">
@@ -273,8 +292,8 @@
         <div class="pill-row">
           <div class="pill">народився у <b id="birthWeekday">—</b></div>
           <div class="pill"><b id="dayOfYear">—</b>-й день року</div>
-          <div class="pill">юліанська дата: <b id="julianDate">—</b></div>
           <div class="pill">фаза місяця при народженні: <b id="birthMoon">—</b></div>
+          <div class="pill">юліанська дата: <b id="julianDate">—</b></div>
         </div>
         <div class="note">Юліанська дата (JDN) — це суцільний рахунок днів від умовної точки відліку (4713 р. до н.е.), без місяців і років. Астрономи й хронологи використовують її, щоб рахувати інтервал між будь-якими двома датами простим відніманням чисел, не морочачись із різною довжиною місяців і високосними роками.</div>
       </div>
@@ -286,7 +305,7 @@
         <div class="pill-row">
           <div class="pill">покоління: <b id="generation">—</b></div>
           <div class="pill">знак зодіаку: <b id="zodiacWest">—</b></div>
-          <div class="pill">східний календар: <b id="zodiacEast">—</b></div>
+          <div class="pill">східний календар: <span class="color-dot" id="eastColorDot"></span> <b id="zodiacEast">—</b></div>
           <div class="pill">дата римськими цифрами: <b id="roman">—</b></div>
         </div>
       </div>
@@ -400,12 +419,30 @@ function westernZodiac(m,d){
   return 'Козеріг';
 }
 
+
 function easternZodiac(y){
-  const animals = ['Щур','Бик','Тигр','Кролик','Дракон','Змія','Кінь','Коза','Мавпа','Півень','Собака','Свиня'];
-  const elements = ['Метал','Метал','Вода','Вода','Дерево','Дерево','Вогонь','Вогонь','Земля','Земля'];
+  const animals = [
+    {name:'Щур',f:false},{name:'Бик',f:false},{name:'Тигр',f:false},{name:'Кролик',f:false},
+    {name:'Дракон',f:false},{name:'Змія',f:true},{name:'Кінь',f:false},{name:'Коза',f:true},
+    {name:'Мавпа',f:true},{name:'Півень',f:false},{name:'Собака',f:true},{name:'Свиня',f:true}
+  ];
+  const elems = [
+    {m:'Металевий',f:'Металева',color:'Білий',colorF:'Біла',hex:'#e0e0e0'},
+    {m:'Металевий',f:'Металева',color:'Білий',colorF:'Біла',hex:'#e0e0e0'},
+    {m:'Водяний',f:'Водяна',color:'Чорний',colorF:'Чорна',hex:'#4a4a4a'},
+    {m:'Водяний',f:'Водяна',color:'Чорний',colorF:'Чорна',hex:'#4a4a4a'},
+    {m:'Дерев\'яний',f:'Дерев\'яна',color:'Зелений',colorF:'Зелена',hex:'#27ae60'},
+    {m:'Дерев\'яний',f:'Дерев\'яна',color:'Зелений',colorF:'Зелена',hex:'#27ae60'},
+    {m:'Вогняний',f:'Вогняна',color:'Червоний',colorF:'Червона',hex:'#e74c3c'},
+    {m:'Вогняний',f:'Вогняна',color:'Червоний',colorF:'Червона',hex:'#e74c3c'},
+    {m:'Земляний',f:'Земляна',color:'Жовтий',colorF:'Жовта',hex:'#f1c40f'},
+    {m:'Земляний',f:'Земляна',color:'Жовтий',colorF:'Жовта',hex:'#f1c40f'}
+  ];
   const a = animals[((y - 4) % 12 + 12) % 12];
-  const e = elements[((y % 10) + 10) % 10];
-  return `${e} ${a}`;
+  const el = elems[((y % 10) + 10) % 10];
+  const color = a.f ? el.colorF : el.color;
+  const elem = a.f ? el.f : el.m;
+  return {text:`${color} ${elem} ${a.name}`, hex:el.hex};
 }
 
 function generation(y){
@@ -643,8 +680,11 @@ function calculate(){
 
   // Identity block
   document.getElementById('generation').textContent = generation(Y);
-  document.getElementById('zodiacWest').textContent = westernZodiac(M,D);
-  document.getElementById('zodiacEast').textContent = easternZodiac(Y);
+  const sign = westernZodiac(M,D);
+  document.getElementById('zodiacWest').textContent = sign;
+  const east = easternZodiac(Y);
+  document.getElementById('zodiacEast').textContent = east.text;
+  document.getElementById('eastColorDot').style.background = east.hex;
   document.getElementById('roman').textContent = `${toRoman(D)}.${toRoman(M)}.${toRoman(Y)}`;
 
   // Milestones
@@ -675,7 +715,7 @@ function calculate(){
   tick();
   tickHandle = setInterval(tick, 1000);
 
-  document.getElementById('results').scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('scrollHint').classList.add('show');
 }
 
 function tick(){
@@ -689,6 +729,10 @@ function tick(){
   document.getElementById('cMi').textContent = pad(a.mi);
   document.getElementById('cS').textContent = pad(a.s);
 }
+window.addEventListener('scroll',function(){
+  const hint=document.getElementById('scrollHint');
+  if(window.scrollY>100) hint.classList.remove('show');
+},{passive:true});
 </script>
 </body>
 </html>
