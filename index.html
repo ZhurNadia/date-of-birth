@@ -19,7 +19,7 @@
     --teal:#5b9c92;
     --text:#e8e2d4;
     --text-dim:#8fa0a8;
-    --text-faint:#5a6b73;
+    --text-faint:#7d919a;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   body{
@@ -68,7 +68,10 @@
   }
   .hero h1 em{font-style:italic;color:var(--gold);}
 
-  .dial-wrap{display:flex;justify-content:center;margin-bottom:36px;}
+  .curve-wrap{display:flex;justify-content:center;margin-bottom:32px;}
+  .curve-wrap svg{width:100%;max-width:460px;height:auto;}
+  @keyframes drawCurve{from{stroke-dashoffset:1000;}to{stroke-dashoffset:0;}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 
   .controls{
     display:flex;flex-wrap:wrap;gap:14px;justify-content:center;align-items:center;
@@ -218,7 +221,7 @@
   <div class="hero">
     <h1>Скільки часу ти вже <em>прожив</em> — і що каже про це календар</h1>
 
-    <div class="dial-wrap"><svg id="dial" width="180" height="180" viewBox="0 0 180 180"></svg></div>
+    <div class="curve-wrap"><svg id="lifeCurve" viewBox="0 0 460 120"></svg></div>
 
     <div class="input-label">введи дату народження та середній час сну за добу</div>
     <div class="controls">
@@ -330,7 +333,6 @@
 
 <script>
 const WD = ['неділя','понеділок','вівторок','середа','четвер',"п'ятниця",'субота'];
-const WD_SHORT = ['нд','пн','вт','ср','чт','пт','сб'];
 
 function pad(n){return n<10?'0'+n:''+n;}
 
@@ -513,23 +515,49 @@ function shiftMC(id,delta){
 
 let BIRTH = null, SLEEP = 8, tickHandle = null;
 
-function drawDial(highlightDow){
-  const svg = document.getElementById('dial');
-  const cx=90, cy=90, r=68;
-  let html = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#26363f" stroke-width="1"/>`;
-  for(let i=0;i<7;i++){
-    const ang = (i/7)*2*Math.PI - Math.PI/2;
-    const x1 = cx + Math.cos(ang)*(r-8), y1 = cy + Math.sin(ang)*(r-8);
-    const x2 = cx + Math.cos(ang)*r, y2 = cy + Math.sin(ang)*r;
-    const active = i===highlightDow;
-    html += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${active?'#c9a24b':'#3a4a53'}" stroke-width="${active?2.5:1}"/>`;
-    const lx = cx + Math.cos(ang)*(r+16), ly = cy + Math.sin(ang)*(r+16);
-    html += `<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-family="JetBrains Mono, monospace" font-size="9" fill="${active?'#c9a24b':'#5a6b73'}">${WD_SHORT[i]}</text>`;
+function drawLifeCurve(currentAge){
+  const svg=document.getElementById('lifeCurve');
+  const maxAge=85, w=460, h=120;
+  const pL=25,pR=15,pT=18,pB=22;
+  const pW=w-pL-pR, pH=h-pT-pB;
+  function cx(a){return pL+(a/maxAge)*pW;}
+  function cy(a){const t=a/maxAge;return pT+pH*(1-Math.pow(Math.sin(t*Math.PI),0.75)*(1-0.12*t*t));}
+  const baseline=pT+pH;
+  let pathD='';
+  for(let i=0;i<=170;i++){const a=(i/170)*maxAge;pathD+=(i?'L':'M')+cx(a).toFixed(1)+','+cy(a).toFixed(1);}
+  const areaD=pathD+`L${cx(maxAge).toFixed(1)},${baseline}L${cx(0).toFixed(1)},${baseline}Z`;
+  let s=`<defs>
+    <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c9a24b" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#c9a24b" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="gl"><feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <line x1="${pL}" y1="${baseline}" x2="${pL+pW}" y2="${baseline}" stroke="#26363f" stroke-width="1"/>`;
+  [0,10,20,30,40,50,60,70,80].forEach(a=>{
+    const mx=cx(a);
+    s+=`<line x1="${mx}" y1="${baseline}" x2="${mx}" y2="${baseline+4}" stroke="#3a4a53" stroke-width="1"/>`;
+    s+=`<text x="${mx}" y="${baseline+15}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="8" fill="var(--text-faint)">${a}</text>`;
+  });
+  if(currentAge!==null&&currentAge>=0){
+    s+=`<path d="${areaD}" fill="url(#cg)" opacity="0" style="animation:fadeIn .8s .3s forwards"/>`;
+    s+=`<path d="${pathD}" fill="none" stroke="#c9a24b" stroke-width="1.5" stroke-opacity="0.4" stroke-dasharray="1000" stroke-dashoffset="1000" style="animation:drawCurve 1.5s ease forwards"/>`;
+    const dx=cx(currentAge),dy=cy(currentAge);
+    s+=`<line x1="${dx}" y1="${dy+4}" x2="${dx}" y2="${baseline}" stroke="#c9a24b" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 3" opacity="0" style="animation:fadeIn .4s 1s forwards"/>`;
+    s+=`<circle cx="${dx}" cy="${dy}" r="5" fill="#c9a24b" filter="url(#gl)" opacity="0" style="animation:fadeIn .4s 1.2s forwards">
+      <animate attributeName="r" values="4;7;4" dur="2.5s" repeatCount="indefinite" begin="1.2s"/>
+      <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite" begin="1.2s"/>
+    </circle>`;
+    s+=`<circle cx="${dx}" cy="${dy}" r="3" fill="#c9a24b" opacity="0" style="animation:fadeIn .3s 1.2s forwards"/>`;
+    s+=`<text x="${dx}" y="${dy-12}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" fill="#c9a24b" font-weight="500" opacity="0" style="animation:fadeIn .4s 1.4s forwards">${currentAge}</text>`;
+  }else{
+    s+=`<path d="${pathD}" fill="none" stroke="#26363f" stroke-width="1" stroke-opacity="0.5"/>`;
   }
-  html += `<circle cx="${cx}" cy="${cy}" r="3" fill="#c9a24b"/>`;
-  svg.innerHTML = html;
+  svg.innerHTML=s;
 }
-drawDial(-1);
+drawLifeCurve(null);
 
 let futureStart = 0, moonStart = 0;
 
@@ -593,9 +621,8 @@ function calculate(){
   SLEEP = Number(document.getElementById('sleepHours').value);
 
   document.getElementById('results').classList.add('show');
-  drawDial(BIRTH.getDay());
-
   const now = new Date();
+  drawLifeCurve(ageAt(BIRTH, now));
 
   // Calendar block
   document.getElementById('birthWeekday').textContent = WD[BIRTH.getDay()];
