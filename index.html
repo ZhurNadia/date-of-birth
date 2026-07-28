@@ -288,7 +288,7 @@
       <div class="card">
         <h3>на який день тижня випаде день народження</h3>
         <table>
-          <thead><tr><th>рік</th><th>вік</th><th>день тижня</th></tr></thead>
+          <thead><tr><th class="col-narrow">рік</th><th class="col-narrow">вік</th><th>день тижня</th></tr></thead>
           <tbody id="futureTable"></tbody>
         </table>
         <div class="table-nav" id="futureNav">
@@ -301,7 +301,7 @@
       <div class="card">
         <h3>фаза місяця по роках</h3>
         <table>
-          <thead><tr><th>рік</th><th>вік</th><th>фаза місяця в день народження</th></tr></thead>
+          <thead><tr><th class="col-narrow">рік</th><th class="col-narrow">вік</th><th>фаза</th><th>місяць у знаку</th></tr></thead>
           <tbody id="moonTable"></tbody>
         </table>
         <div class="table-nav" id="moonNav">
@@ -350,6 +350,14 @@ const MOON_NAMES = ['новий місяць','молодий місяць','п�
 function moonPhaseName(phase){
   const idx = Math.round(phase*8) % 8;
   return MOON_NAMES[idx];
+}
+
+const ZODIAC_SIGNS = ['Овен','Телець','Близнюки','Рак','Лев','Діва','Терези','Скорпіон','Стрілець','Козеріг','Водолій','Риби'];
+function moonZodiacSign(date){
+  const d = (date.getTime()/86400000) - 10957.5;
+  const L = (218.316 + 13.176396 * d) % 360;
+  const sign = Math.floor(((L % 360) + 360) % 360 / 30);
+  return ZODIAC_SIGNS[sign];
 }
 
 function ageBreakdown(birth, now){
